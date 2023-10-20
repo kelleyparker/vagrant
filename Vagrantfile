@@ -1,3 +1,5 @@
+# Creating Sample vagrant file that creates 7 VMs using virtualbox.  Before running "vagrant up", I already installed the disksize plugin (vagrant plugin install vagrant-disksize)
+
 Vagrant.configure("2") do |config|
   
   # Define host1 machine
