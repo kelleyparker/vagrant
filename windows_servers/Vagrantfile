@@ -1,0 +1,49 @@
+# Creates four Windows Servers.
+# 1) One for active directory
+# 2) One that's a DNS Server
+# 3) One that's for Microsoft SQL
+# 4) One that's a IIS Web Server 
+#
+# As of 10/21/2023, the services are yet to be configured in this script
+
+Vagrant.configure("2") do |config|
+    config.vm.define "activeDirectory" do |activeDirectory|
+    activeDirectory.vm.box = "gusztavvargadr/windows-server"
+    activeDirectory.vm.hostname = "activeDirectory"
+    activeDirectory.vm.network "private_network", ip: "10.0.7.2"
+    activeDirectory.vm.provider "virtualbox" do |vb|
+        vb.memory = "2048" # Allocate 2GB of RAM
+        vb.cpus = 2 # Set 2 vCPUs
+      end
+    end
+
+    config.vm.define "DNSServer" do |dns_server|
+        dns_server.vm.box = "gusztavvargadr/windows-server"
+        dns_server.vm.hostname = "dns_server"
+        dns_server.vm.network "private_network", ip: "10.0.7.3"
+        dns_server.vm.provider "virtualbox" do |vb|
+          vb.memory = "2048" # Allocate 2GB of RAM
+          vb.cpus = 2 # Set 2 vCPUs
+      end
+    end
+
+    config.vm.define "sqlServer" do |sqlServer|
+        sqlServer.vm.box = "gusztavvargadr/windows-server"
+        sqlServer.vm.hostname = "sqlServer"
+        sqlServer.vm.network "private_network", ip: "10.0.7.4"
+        sqlServer.vm.provider "virtualbox" do |vb|
+          vb.memory = "2048" # Allocate 2GB of RAM
+          vb.cpus = 2 # Set 2 vCPUs
+        end
+    end
+  
+    config.vm.define "webServer" do |webServer|
+        webServer.vm.box = "gusztavvargadr/windows-server"
+        webServer.vm.hostname = "webServer"
+        webServer.vm.network "private_network", ip: "10.0.7.5"
+        webServer.vm.provider "virtualbox" do |vb|
+          vb.memory = "2048" # Allocate 2GB of RAM
+          vb.cpus = 2 # Set 2 vCPUs
+      end
+    end
+  end

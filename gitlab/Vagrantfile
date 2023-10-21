@@ -3,6 +3,7 @@
 Vagrant.configure("2") do |config|
     config.vm.box = "bento/ubuntu-20.04"
     
+    
     config.vm.provider "virtualbox" do |vb|
       vb.memory = 4096 # 4 GB RAM
     end
@@ -23,7 +24,7 @@ Vagrant.configure("2") do |config|
   
       # Add GitLab package repository and install GitLab
       curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.deb.sh | sudo bash
-      sudo EXTERNAL_URL="https://gitlab.example.com" apt-get install gitlab-ee
+      sudo apt-get install gitlab-ee
     SHELL
   end
   
