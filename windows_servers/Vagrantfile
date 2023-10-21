@@ -17,11 +17,11 @@ Vagrant.configure("2") do |config|
       end
     end
 
-    config.vm.define "DNSServer" do |dns_server|
-        dns_server.vm.box = "gusztavvargadr/windows-server"
-        dns_server.vm.hostname = "dns_server"
-        dns_server.vm.network "private_network", ip: "10.0.7.3"
-        dns_server.vm.provider "virtualbox" do |vb|
+    config.vm.define "dnsserver" do |dnsserver|
+        dnsserver.vm.box = "gusztavvargadr/windows-server"
+        dnsserver.vm.hostname = "dnsserver"
+        dnsserver.vm.network "private_network", ip: "10.0.7.3"
+        dnsserver.vm.provider "virtualbox" do |vb|
           vb.memory = "2048" # Allocate 2GB of RAM
           vb.cpus = 2 # Set 2 vCPUs
       end
