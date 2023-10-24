@@ -13,7 +13,7 @@ Vagrant.configure("2") do |config|
     activeDirectory.vm.network "private_network", ip: "10.0.7.2"
     activeDirectory.vm.provider "virtualbox" do |vb|
         vb.memory = "2048" # Allocate 2GB of RAM
-        vb.cpus = 2 # Set 2 vCPUs
+        vb.cpus = 1 # Set 2 vCPUs
       end
     end
 
@@ -23,7 +23,7 @@ Vagrant.configure("2") do |config|
         dnsserver.vm.network "private_network", ip: "10.0.7.3"
         dnsserver.vm.provider "virtualbox" do |vb|
           vb.memory = "2048" # Allocate 2GB of RAM
-          vb.cpus = 2 # Set 2 vCPUs
+          vb.cpus = 1 # Set 2 vCPUs
       end
     end
 
@@ -33,7 +33,7 @@ Vagrant.configure("2") do |config|
         sqlServer.vm.network "private_network", ip: "10.0.7.4"
         sqlServer.vm.provider "virtualbox" do |vb|
           vb.memory = "2048" # Allocate 2GB of RAM
-          vb.cpus = 2 # Set 2 vCPUs
+          vb.cpus = 1 # Set 2 vCPUs
         end
     end
   
@@ -43,7 +43,7 @@ Vagrant.configure("2") do |config|
         webServer.vm.network "private_network", ip: "10.0.7.5"
         webServer.vm.provider "virtualbox" do |vb|
           vb.memory = "2048" # Allocate 2GB of RAM
-          vb.cpus = 2 # Set 2 vCPUs
+          vb.cpus = 1 # Set 2 vCPUs
       end
     end
   end
