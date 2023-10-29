@@ -10,8 +10,6 @@ Vagrant.configure("2") do |config|
       vb.gui = false    # Disable GUI
     end
 
-    lampsrv.ssh.username = "cliffgoat" # Set the desired default username
-
     lampsrv.vm.boot_timeout = 600 # Set timeout to 10 minutes (default is 300 seconds)
 
     lampsrv.vm.provision "shell", inline: <<-SHELL
