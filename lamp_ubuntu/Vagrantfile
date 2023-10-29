@@ -8,8 +8,12 @@ Vagrant.configure("2") do |config|
     vb.cpus = 2       # Set desired CPU count
   end
 
+  config.ssh.username = "cliffgoat" # Set the desired default username
+
   config.vm.provision "shell", inline: <<-SHELL
     sudo apt-get update
+    sudo apt-get upgrade -y   # Apply any available package updates
+
     sudo apt-get install -y apache2
     sudo apt-get install -y mysql-server
     sudo apt-get install -y php libapache2-mod-php php-mysql
