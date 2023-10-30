@@ -1,24 +1,14 @@
 <?php
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = $_POST["name"];
+$servername = "localhost";
+$username = "root";
+$password = "password";
+$dbname = "db1";
 
-    // Establish a connection to MySQL
-    $conn = new mysqli("localhost", "root", "password", "db1");
+$conn = new mysqli($servername, $username, $password, $dbname);
 
-    // Check connection
-    if ($conn->connect_error) {
-        die("Connection failed: " . $conn->connect_error);
-    }
-
-    // Prepare and execute SQL query
-    $sql = "INSERT INTO users (name) VALUES ('$name')";
-
-    if ($conn->query($sql) === TRUE) {
-        echo "Record added successfully";
-    } else {
-        echo "Error: " . $sql . "<br>" . $conn->error;
-    }
-
-    $conn->close();
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
 }
+echo "Connected successfully";
+$conn->close();
 ?>
