@@ -19,8 +19,8 @@ Vagrant.configure("2") do |config|
 
       # Shell provisioner to update the VM with dnf upgrade and install Ansible
       vm.vm.provision "shell", inline: <<-SHELL
-        sudo dnf -y upgrade
         sudo dnf install -y ansible
+        sudo dnf install -y ansible-navigator  # removed dnf upgrade to save on deployment time.
       SHELL
     end
   end
