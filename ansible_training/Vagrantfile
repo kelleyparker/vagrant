@@ -1,0 +1,27 @@
+####################################################################################################################################################
+# Configures 8 Fedora VMs running Fedora 38, all with 2gb of ram and installs Ansible on all hosts along with dnf upgrade to pull latest updates. 
+# Using to study for RHCE v9
+####################################################################################################################################################
+
+# Vagrantfile
+Vagrant.configure("2") do |config|
+  # Define the number of VMs
+  num_vms = 8
+
+  # Loop to create VMs
+  (1..num_vms).each do |i|
+    config.vm.define "fedora#{i}" do |vm|
+      vm.vm.box = "fedora/38-cloud-base"
+      vm.vm.box_version = "38.20230413.1" # Specify the box version
+      vm.vm.provider "virtualbox" do |vb|
+        vb.memory = 2048 # 2GB of RAM
+      end
+
+      # Shell provisioner to update the VM with dnf upgrade and install Ansible
+      vm.vm.provision "shell", inline: <<-SHELL
+        sudo dnf -y upgrade
+        sudo dnf install -y ansible
+      SHELL
+    end
+  end
+end
