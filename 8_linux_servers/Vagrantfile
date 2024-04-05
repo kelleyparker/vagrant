@@ -13,6 +13,7 @@
 #   If `vagrant up` doesn't work the first time, do the following:
 #       1) Update your Vagrant
 #       2) run this command: `vagrant plugin install vagrant-vbguest`
+#       3) Then run: `vagrant up`
 
 
 Vagrant.configure("2") do |config|
