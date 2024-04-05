@@ -1,0 +1,62 @@
+#
+#   Creates 8 Linux servers
+#
+#   - fedora/39-cloud-base
+#   - fedora/39-cloud-base
+#   - generic/rhel9 
+#   - generic/rhel9 
+#   - ubuntu/bionic64
+#   - ubuntu/focal64
+#   - kalilinux/rolling
+#   - kalilinux/rolling
+#
+#   If `vagrant up` doesn't work the first time, do the following:
+#       1) Update your Vagrant
+#       2) run this command: `vagrant plugin install vagrant-vbguest`
+
+
+Vagrant.configure("2") do |config|
+  
+    config.vm.provider "virtualbox" do |vb|
+      vb.memory = "4096"
+    end
+  
+    # Fedora Cloud Base x2
+    config.vm.define "fedora-base1" do |fedora_base1|
+      fedora_base1.vm.box = "fedora/39-cloud-base"
+      fedora_base1.vm.box_version = "39.20231031.1"
+    end
+  
+    config.vm.define "fedora-base2" do |fedora_base2|
+      fedora_base2.vm.box = "fedora/39-cloud-base"
+      fedora_base2.vm.box_version = "39.20231031.1"
+    end
+  
+    # RHEL 9 x2
+    config.vm.define "rhel9-1" do |rhel9_1|
+      rhel9_1.vm.box = "generic/rhel9"
+    end
+  
+    config.vm.define "rhel9-2" do |rhel9_2|
+      rhel9_2.vm.box = "generic/rhel9"
+    end
+  
+    # Ubuntu Bionic64 and Focal64
+    config.vm.define "ubuntu-bionic64" do |ubuntu_bionic64|
+      ubuntu_bionic64.vm.box = "ubuntu/bionic64"
+    end
+  
+    config.vm.define "ubuntu-focal64" do |ubuntu_focal64|
+      ubuntu_focal64.vm.box = "ubuntu/focal64"
+    end
+  
+    # Kali Linux Rolling x2
+    config.vm.define "kali-rolling1" do |kali_rolling1|
+      kali_rolling1.vm.box = "kalilinux/rolling"
+    end
+  
+    config.vm.define "kali-rolling2" do |kali_rolling2|
+      kali_rolling2.vm.box = "kalilinux/rolling"
+    end
+  end
+  
