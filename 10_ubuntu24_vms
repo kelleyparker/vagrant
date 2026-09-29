@@ -1,0 +1,153 @@
+### RENAME THIS FILE TO Vagrantfile and then run `vagrant up`
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+#
+# 10 x Ubuntu 24.04 LTS (Noble Numbat) lab VMs -- ubuntu1 .. ubuntu10
+# Hyper-V version of the VirtualBox lab.
+#
+#   Provider : Hyper-V
+#   Resources: 2 vCPU each, dynamic memory (2048 MB at boot, up to 8192 MB)
+#   Provision: provision/bootstrap.sh (same script as the VirtualBox lab)
+#
+# REQUIREMENTS
+#   - Windows 10/11 Pro, Enterprise or Education (Hyper-V is not in Home)
+#   - Hyper-V enabled:
+#       Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
+#   - Run Vagrant from an ELEVATED (Run as administrator) PowerShell. The Hyper-V
+#     provider fails with a permissions error from a normal shell.
+#
+# NETWORKING
+#   VMs attach to the Hyper-V "Default Switch" (NAT + DHCP + DNS provided by
+#   Windows). They get internet, reach each other, and Windows can reach them.
+#   Vagrant's Hyper-V provider cannot assign static IPs the way VirtualBox
+#   private_network did, so addresses are DHCP. Names resolve through the
+#   switch's DNS as <name>.mshome.net (e.g. ping ubuntu3.mshome.net from any VM
+#   or from Windows). The Default Switch subnet can change when Windows reboots.
+#
+#   To use a different switch (for example an External switch you created):
+#     PowerShell:  $env:SWITCH_NAME="MySwitch"; vagrant up
+#
+# Usage:
+#   vagrant up                       # bring all 10 up
+#   vagrant up ubuntu1 ubuntu2       # bring up a subset
+#   vagrant status / vagrant ssh ubuntu4 / vagrant halt / vagrant destroy -f
+#
+# Override the count without editing this file:
+#   PowerShell:  $env:VM_COUNT=3; vagrant up
+#
+Vagrant.require_version ">= 2.3.0"
+
+# Use Hyper-V without having to type --provider=hyperv every time.
+ENV["VAGRANT_DEFAULT_PROVIDER"] ||= "hyperv"
+
+# ---------------------------------------------------------------------------
+# Tunables
+# ---------------------------------------------------------------------------
+# bento/ubuntu-24.04 has no Hyper-V build (VirtualBox/VMware/Parallels only).
+# boxen/ubuntu-24.04 does. Override with $env:BOX_NAME if you host your own.
+BOX_NAME       = ENV["BOX_NAME"] || "boxen/ubuntu-24.04"
+BOX_VERSION    = ">= 0"
+VM_COUNT       = (ENV["VM_COUNT"] || 10).to_i
+VM_PREFIX      = "ubuntu"
+VM_CPUS        = 2
+VM_STARTUP_MB  = 2048   # memory each VM boots with
+VM_MEMORY_MB   = 8192   # ceiling Hyper-V dynamic memory may grow each VM to
+LINKED_CLONES  = true   # differencing disks off the box image: fast + small.
+                        # Do not move or delete the base box while VMs exist.
+AUTOSTART      = true   # plain `vagrant up` starts every VM
+
+# Hyper-V virtual switch the VMs attach to.
+SWITCH_NAME    = ENV["SWITCH_NAME"] || "Default Switch"
+
+# ---------------------------------------------------------------------------
+# Find an SSH public key on the host to push into each VM.
+# Looks at ~/.ssh/*.pub -- on Windows that is C:\Users\<you>\.ssh\
+# Set SSH_PUBKEY to point somewhere else, or leave it: provisioning just skips.
+# ---------------------------------------------------------------------------
+def host_ssh_pubkey
+  explicit = ENV["SSH_PUBKEY"]
+  candidates =
+    if explicit && !explicit.empty?
+      [File.expand_path(explicit)]
+    else
+      %w[id_ed25519.pub id_rsa.pub id_ecdsa.pub].map { |f| File.join(Dir.home, ".ssh", f) }
+    end
+
+  path = candidates.find { |p| File.exist?(p) && File.readable?(p) }
+  return nil unless path
+  key = File.read(path).strip
+  key.empty? ? nil : key
+rescue StandardError
+  nil
+end
+
+SSH_PUBKEY = host_ssh_pubkey
+
+Vagrant.configure("2") do |config|
+  config.vm.box         = BOX_NAME
+  config.vm.box_version = BOX_VERSION
+  config.vm.box_check_update = false
+
+  # Boxes are big and 10 first boots take a while -- be patient before failing.
+  config.vm.boot_timeout = 600
+
+  # The default Hyper-V synced folder uses SMB, which prompts for your Windows
+  # username/password on every `vagrant up`. The lab does not need it.
+  # (Provisioning scripts are uploaded over SSH, not through the synced folder.)
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  (1..VM_COUNT).each do |i|
+    name = "#{VM_PREFIX}#{i}"
+
+    config.vm.define name, autostart: AUTOSTART do |node|
+      node.vm.hostname = name
+
+      # --- Networking -------------------------------------------------------
+      # On Hyper-V, naming the switch here just selects it and avoids the
+      # interactive "which switch?" prompt. It does not set an IP address.
+      node.vm.network "public_network", bridge: SWITCH_NAME
+
+      # --- Provider ---------------------------------------------------------
+      node.vm.provider "hyperv" do |h|
+        h.vmname       = name
+        h.cpus         = VM_CPUS
+        h.memory       = VM_STARTUP_MB
+        h.maxmemory    = VM_MEMORY_MB
+        h.linked_clone = LINKED_CLONES
+
+        # Windows takes automatic checkpoints of running VMs; on a 10-VM lab
+        # that quietly eats disk. These are throwaway VMs.
+        h.enable_checkpoints           = false
+        h.enable_automatic_checkpoints = false
+
+        # Ten VMs booting at once can be slow to report an IP to Hyper-V.
+        h.ip_address_timeout = 300
+      end
+
+      # --- Provisioning -----------------------------------------------------
+      # HOSTS_BLOCK is empty here: addresses are DHCP, so there is no fixed
+      # /etc/hosts table to write. Name lookup goes through the switch's DNS.
+      node.vm.provision "bootstrap",
+        type: "shell",
+        path: "provision/bootstrap.sh",
+        env: {
+          "VM_NAME"     => name,
+          "SSH_PUBKEY"  => SSH_PUBKEY.to_s,
+          "HOSTS_BLOCK" => ""
+        }
+
+      # Print the reachable addresses at the end of each boot.
+      node.vm.provision "summary",
+        type: "shell",
+        run: "always",
+        privileged: false,
+        inline: <<~SHELL
+          echo "----------------------------------------------"
+          echo " #{name} is up  (Hyper-V switch: #{SWITCH_NAME})"
+          ip -4 -o addr show scope global | awk '{printf "   %-8s %s\\n", $2, $4}'
+          echo " DNS name on the Default Switch: #{name}.mshome.net"
+          echo "----------------------------------------------"
+        SHELL
+    end
+  end
+end
