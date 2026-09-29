@@ -1,4 +1,3 @@
-### RENAME THIS FILE TO Vagrantfile and then run `vagrant up`
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 #
@@ -43,8 +42,9 @@ ENV["VAGRANT_DEFAULT_PROVIDER"] ||= "hyperv"
 # ---------------------------------------------------------------------------
 # Tunables
 # ---------------------------------------------------------------------------
-# bento/ubuntu-24.04 has no Hyper-V build (VirtualBox/VMware/Parallels only).
-# boxen/ubuntu-24.04 does. Override with $env:BOX_NAME if you host your own.
+# bento/ubuntu-24.04 has no Hyper-V build (tested: Vagrant Cloud answers "box
+# doesn't support the provider you requested"), so this lab uses boxen, which
+# publishes a hyperv build. Override with $env:BOX_NAME if you host your own.
 BOX_NAME       = ENV["BOX_NAME"] || "boxen/ubuntu-24.04"
 BOX_VERSION    = ">= 0"
 VM_COUNT       = (ENV["VM_COUNT"] || 10).to_i
