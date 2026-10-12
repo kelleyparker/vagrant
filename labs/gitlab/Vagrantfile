@@ -1,0 +1,26 @@
+# -*- mode: ruby -*-
+# GitLab EE on Ubuntu 20.04, host-only network (192.168.33.10).
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/ubuntu-20.04"
+  config.vm.network "private_network", ip: "192.168.33.10"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+  end
+
+  config.vm.provision "shell", inline: <<~SHELL
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Preseed postfix before installing it so the install stays non-interactive.
+    echo "postfix postfix/main_mailer_type select Internet Site" | debconf-set-selections
+    echo "postfix postfix/mailname string example.com" | debconf-set-selections
+
+    apt-get update
+    apt-get install -y curl openssh-server ca-certificates tzdata perl postfix
+
+    curl -fsSL https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.deb.sh | bash
+    apt-get install -y gitlab-ee
+  SHELL
+end

@@ -1,0 +1,24 @@
+# -*- mode: ruby -*-
+# 4 Windows Server VMs on VirtualBox with static IPs on a host-only network.
+
+MACHINES = {
+  "activeDirectory" => "10.0.7.2",
+  "dnsserver"       => "10.0.7.3",
+  "sqlServer"       => "10.0.7.4",
+  "webServer"       => "10.0.7.5",
+}.freeze
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "gusztavvargadr/windows-server"
+
+  MACHINES.each do |name, ip|
+    config.vm.define name do |node|
+      node.vm.hostname = name
+      node.vm.network "private_network", ip: ip
+      node.vm.provider "virtualbox" do |vb|
+        vb.memory = 2048
+        vb.cpus   = 1
+      end
+    end
+  end
+end

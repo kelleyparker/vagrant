@@ -2,11 +2,10 @@
 # vi: set ft=ruby :
 #
 # 10 x Ubuntu 24.04 LTS (Noble Numbat) lab VMs -- ubuntu1 .. ubuntu10
-# Hyper-V version of the VirtualBox lab.
 #
 #   Provider : Hyper-V
 #   Resources: 2 vCPU each, dynamic memory (2048 MB at boot, up to 8192 MB)
-#   Provision: provision/bootstrap.sh (same script as the VirtualBox lab)
+#   Provision: provision/bootstrap.sh (hostname, SSH key, base packages)
 #
 # REQUIREMENTS
 #   - Windows 10/11 Pro, Enterprise or Education (Hyper-V is not in Home)

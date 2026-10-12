@@ -1,1 +1,6 @@
 .vagrant/
+*.box
+*.log
+*.bak*
+.DS_Store
+.env

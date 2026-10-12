@@ -1,0 +1,26 @@
+# -*- mode: ruby -*-
+# 3 Fedora 37 VMs on VirtualBox with 60 GB disks.
+#
+# Requires the disksize plugin:  vagrant plugin install vagrant-disksize
+
+MACHINES = %w[host1 sql host3].freeze
+
+unless Vagrant.has_plugin?("vagrant-disksize")
+  raise "Missing plugin. Run: vagrant plugin install vagrant-disksize"
+end
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/fedora37"
+  config.vm.boot_timeout = 300
+
+  MACHINES.each do |name|
+    config.vm.define name do |node|
+      node.vm.hostname  = name
+      node.disksize.size = "60GB"
+      node.vm.provider "virtualbox" do |vb|
+        vb.memory = 4096
+        vb.cpus   = 2
+      end
+    end
+  end
+end

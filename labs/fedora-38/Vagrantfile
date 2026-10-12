@@ -1,0 +1,18 @@
+# -*- mode: ruby -*-
+# Single Fedora 38 cloud VM on VirtualBox, bridged, fully updated.
+
+Vagrant.configure("2") do |config|
+  config.vm.box         = "fedora/38-cloud-base"
+  config.vm.box_version = "38.20230413.1"
+
+  config.vm.define "fedora_base_38" do |fedora|
+    fedora.vm.network "public_network"
+    fedora.vm.boot_timeout = 900
+    fedora.vm.provider "virtualbox" do |vb|
+      vb.memory = 2048
+      vb.cpus   = 2
+      vb.gui    = false
+    end
+    fedora.vm.provision "shell", inline: "dnf update -y"
+  end
+end

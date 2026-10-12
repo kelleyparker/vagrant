@@ -1,0 +1,39 @@
+# -*- mode: ruby -*-
+# LAMP server (Apache, MySQL, PHP) on Ubuntu 22.04 with a small demo form app.
+# The app lives in ./app and is copied into /var/www/html at provision time.
+#
+# NOTE: the app is intentionally simple and insecure (hard-coded credentials,
+# unsanitized SQL in process.php). Use it as a lab target only.
+
+Vagrant.configure("2") do |config|
+  config.vm.define "LampServer" do |lampsrv|
+    lampsrv.vm.box = "ubuntu/jammy64"
+    lampsrv.vm.network "public_network"
+    lampsrv.vm.boot_timeout = 900
+
+    lampsrv.vm.provider "virtualbox" do |vb|
+      vb.memory = 2048
+      vb.cpus   = 2
+      vb.gui    = false
+    end
+
+    lampsrv.vm.provision "shell", inline: <<~SHELL
+      set -e
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get update
+      apt-get upgrade -y
+      apt-get install -y apache2 mysql-server php libapache2-mod-php php-mysql
+
+      # Database, user and table (idempotent so re-provisioning is safe)
+      mysql -e "CREATE DATABASE IF NOT EXISTS db1;"
+      mysql -e "CREATE USER IF NOT EXISTS 'cliffgoat'@'localhost' IDENTIFIED BY 'password';"
+      mysql -e "GRANT ALL PRIVILEGES ON db1.* TO 'cliffgoat'@'localhost';"
+      mysql -e "FLUSH PRIVILEGES;"
+      mysql db1 < /vagrant/app/create_table.sql
+
+      cp /vagrant/app/index.html  /var/www/html/index.html
+      cp /vagrant/app/process.php /var/www/html/process.php
+      systemctl restart apache2
+    SHELL
+  end
+end

@@ -1,0 +1,15 @@
+name: lint
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vagrantfile syntax
+        run: |
+          for f in labs/*/Vagrantfile; do
+            echo "== $f"; ruby -c "$f"
+          done
+      - name: shellcheck
+        run: shellcheck scripts/*.sh labs/*/provision/*.sh

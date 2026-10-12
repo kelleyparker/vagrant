@@ -1,0 +1,26 @@
+# -*- mode: ruby -*-
+# 8 mixed Linux VMs on VirtualBox: Fedora 39, RHEL 9, Ubuntu 18.04/20.04, Kali.
+
+MACHINES = {
+  "fedora-base1"    => { box: "fedora/39-cloud-base", version: "39.20231031.1" },
+  "fedora-base2"    => { box: "fedora/39-cloud-base", version: "39.20231031.1" },
+  "rhel9-1"         => { box: "generic/rhel9" },
+  "rhel9-2"         => { box: "generic/rhel9" },
+  "ubuntu-bionic64" => { box: "ubuntu/bionic64" },
+  "ubuntu-focal64"  => { box: "ubuntu/focal64" },
+  "kali-rolling1"   => { box: "kalilinux/rolling" },
+  "kali-rolling2"   => { box: "kalilinux/rolling" },
+}.freeze
+
+Vagrant.configure("2") do |config|
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 4096
+  end
+
+  MACHINES.each do |name, spec|
+    config.vm.define name do |node|
+      node.vm.box = spec[:box]
+      node.vm.box_version = spec[:version] if spec[:version]
+    end
+  end
+end
