@@ -1,35 +1,102 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 #
-# Fedora 38 VMs (default 8, 2 GB RAM each) with Ansible and ansible-navigator
-# installed.  Used for studying for the RHCE (EX294, RHEL 9).
-# `dnf upgrade` is deliberately skipped to save deployment time.
+# Fedora VMs (default 8, 2 GB RAM each) for studying for the RHCE (EX294, RHEL 9).
 #
-# Overrides:  VM_COUNT=3 VM_MEMORY=1024 vagrant up
-# Note: Fedora 38 is EOL; set BOX / BOX_VERSION to use a newer Fedora box.
+#   fedora1      control node: ansible + ansible-navigator, lab SSH key,
+#                inventory and ansible.cfg in ~/ansible
+#   fedora2..N   managed nodes (reachable from fedora1 by name or IP)
+#
+# Nodes sit on a host-only network 192.168.56.101, .102, ... so they can reach
+# each other.  (Other labs in this repo use .10/.11/.20, so there is no clash.)
+# A throwaway SSH keypair is generated on first `vagrant up` in .vagrant/ and
+# is used only between lab VMs.  Requires ssh-keygen on the host (OpenSSH).
+#
+# Try it:  vagrant up && vagrant ssh fedora1 -c "cd ~/ansible && ansible all -m ping"
+#
+# Overrides:  VM_COUNT=3 VM_MEMORY=1024 NET_PREFIX=192.168.57 vagrant up
+# Fedora 38 is EOL; set BOX / BOX_VERSION to use a newer Fedora box.
+
+require "fileutils"
 
 Vagrant.require_version ">= 2.3.0"
 
 VM_COUNT    = (ENV["VM_COUNT"] || 8).to_i
 VM_MEMORY   = (ENV["VM_MEMORY"] || 2048).to_i
+NET_PREFIX  = ENV["NET_PREFIX"] || "192.168.56"
+IP_OFFSET   = 100
 BOX         = ENV["BOX"] || "fedora/38-cloud-base"
 BOX_VERSION = ENV["BOX"] ? ENV["BOX_VERSION"] : (ENV["BOX_VERSION"] || "38.20230413.1")
 
+NODES = (1..VM_COUNT).map { |i| ["fedora#{i}", "#{NET_PREFIX}.#{IP_OFFSET + i}"] }.freeze
+
+KEY_DIR  = File.join(__dir__, ".vagrant")
+KEY_PATH = File.join(KEY_DIR, "ansible_lab_key")
+
+# Create the lab keypair once, only for commands that actually build VMs.
+if %w[up provision reload].include?(ARGV[0]) && !File.exist?(KEY_PATH)
+  FileUtils.mkdir_p(KEY_DIR)
+  unless system("ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-C", "ansible-lab", "-f", KEY_PATH)
+    abort "ssh-keygen failed. Install OpenSSH on the host and retry."
+  end
+end
+
+HOSTS_BLOCK = NODES.map { |name, ip| "#{ip} #{name}" }.join("\n")
+PUBKEY      = File.exist?("#{KEY_PATH}.pub") ? File.read("#{KEY_PATH}.pub").strip : ""
+
 Vagrant.configure("2") do |config|
-  (1..VM_COUNT).each do |i|
-    config.vm.define "fedora#{i}" do |node|
-      node.vm.box = BOX
-      node.vm.box_version = BOX_VERSION if BOX_VERSION
-      node.vm.hostname = "fedora#{i}"
+  config.vm.box = BOX
+  config.vm.box_version = BOX_VERSION if BOX_VERSION
+
+  NODES.each_with_index do |(name, ip), idx|
+    control = idx.zero?
+
+    config.vm.define name do |node|
+      node.vm.hostname = name
+      node.vm.network "private_network", ip: ip
 
       node.vm.provider "virtualbox" do |vb|
         vb.memory = VM_MEMORY
       end
 
-      node.vm.provision "shell", inline: <<-SHELL
-        set -e
-        dnf install -y ansible ansible-navigator
-      SHELL
+      # Every node: name resolution + trust the lab key.
+      node.vm.provision "shell",
+        env: { "HOSTS_BLOCK" => HOSTS_BLOCK, "PUBKEY" => PUBKEY },
+        inline: <<-SHELL
+          set -e
+          sed -i '/# BEGIN ansible-lab/,/# END ansible-lab/d' /etc/hosts
+          { echo "# BEGIN ansible-lab"; echo "$HOSTS_BLOCK"; echo "# END ansible-lab"; } >> /etc/hosts
+          install -d -m 700 -o vagrant -g vagrant /home/vagrant/.ssh
+          touch /home/vagrant/.ssh/authorized_keys
+          grep -qxF "$PUBKEY" /home/vagrant/.ssh/authorized_keys || echo "$PUBKEY" >> /home/vagrant/.ssh/authorized_keys
+          chown vagrant:vagrant /home/vagrant/.ssh/authorized_keys
+          chmod 600 /home/vagrant/.ssh/authorized_keys
+        SHELL
+
+      next unless control
+
+      # Control node only: private key, ansible config, inventory, packages.
+      node.vm.provision "file", source: KEY_PATH, destination: "/tmp/ansible_lab_key"
+      node.vm.provision "file", source: File.join(__dir__, "ansible.cfg"), destination: "/tmp/ansible.cfg"
+
+      managed = NODES.drop(1).map { |n, _| n }.join(" ")
+      node.vm.provision "shell",
+        privileged: false,
+        env: { "MANAGED" => managed },
+        inline: <<-SHELL
+          set -e
+          # dnf upgrade is deliberately skipped to save deployment time.
+          sudo dnf install -y ansible ansible-navigator
+
+          install -m 600 /tmp/ansible_lab_key ~/.ssh/id_ed25519
+          rm -f /tmp/ansible_lab_key
+          printf 'Host fedora*\\n  StrictHostKeyChecking no\\n  UserKnownHostsFile /dev/null\\n  LogLevel ERROR\\n' > ~/.ssh/config
+          chmod 600 ~/.ssh/config
+
+          mkdir -p ~/ansible
+          install -m 644 /tmp/ansible.cfg ~/ansible/ansible.cfg
+          { echo "[control]"; echo "fedora1"; echo; echo "[managed]"; for h in $MANAGED; do echo "$h"; done; } > ~/ansible/inventory.ini
+        SHELL
     end
   end
 end

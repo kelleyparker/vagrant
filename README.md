@@ -7,7 +7,7 @@ Sample Vagrant labs. Each folder is its own self-contained Vagrant environment;
 |---|---|---|---|
 | [`10_ubuntu24_vms`](10_ubuntu24_vms/) | 10 Ubuntu 24.04 VMs | Hyper-V | 2 GB boot / 8 GB max each |
 | [`8_linux_servers`](8_linux_servers/) | Fedora, RHEL 9, Ubuntu, Kali (8 VMs) | VirtualBox | 2 GB each |
-| [`ansible_training`](ansible_training/) | 8 Fedora VMs with Ansible (RHCE study) | VirtualBox | 2 GB each |
+| [`ansible_training`](ansible_training/) | Ansible control node + 7 managed Fedora VMs (`192.168.56.101-108`) | VirtualBox | 2 GB each |
 | [`database_servers`](database_servers/) | Ubuntu 24.04 + MySQL (`192.168.33.10`) | VirtualBox | 1 GB |
 | [`fedora_38_cloud`](fedora_38_cloud/) | One Fedora 38 VM, bridged | VirtualBox | 2 GB |
 | [`gitlab`](gitlab/) | GitLab EE on Ubuntu 24.04 (`192.168.33.11`) | VirtualBox | 6 GB |
