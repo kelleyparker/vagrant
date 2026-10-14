@@ -1,26 +1,34 @@
-####################################################################################################################################################
-# Configures 8 Fedora VMs running Fedora 38, all with 2gb of ram and installs Ansible on all hosts along with dnf upgrade to pull latest updates. 
-# Using to study for RHCE v9
-####################################################################################################################################################
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+#
+# Fedora 38 VMs (default 8, 2 GB RAM each) with Ansible and ansible-navigator
+# installed.  Used for studying for the RHCE (EX294, RHEL 9).
+# `dnf upgrade` is deliberately skipped to save deployment time.
+#
+# Overrides:  VM_COUNT=3 VM_MEMORY=1024 vagrant up
+# Note: Fedora 38 is EOL; set BOX / BOX_VERSION to use a newer Fedora box.
 
-# Vagrantfile
+Vagrant.require_version ">= 2.3.0"
+
+VM_COUNT    = (ENV["VM_COUNT"] || 8).to_i
+VM_MEMORY   = (ENV["VM_MEMORY"] || 2048).to_i
+BOX         = ENV["BOX"] || "fedora/38-cloud-base"
+BOX_VERSION = ENV["BOX"] ? ENV["BOX_VERSION"] : (ENV["BOX_VERSION"] || "38.20230413.1")
+
 Vagrant.configure("2") do |config|
-  # Define the number of VMs
-  num_vms = 8
+  (1..VM_COUNT).each do |i|
+    config.vm.define "fedora#{i}" do |node|
+      node.vm.box = BOX
+      node.vm.box_version = BOX_VERSION if BOX_VERSION
+      node.vm.hostname = "fedora#{i}"
 
-  # Loop to create VMs
-  (1..num_vms).each do |i|
-    config.vm.define "fedora#{i}" do |vm|
-      vm.vm.box = "fedora/38-cloud-base"
-      vm.vm.box_version = "38.20230413.1" # Specify the box version
-      vm.vm.provider "virtualbox" do |vb|
-        vb.memory = 2048 # 2GB of RAM
+      node.vm.provider "virtualbox" do |vb|
+        vb.memory = VM_MEMORY
       end
 
-      # Shell provisioner to update the VM with dnf upgrade and install Ansible
-      vm.vm.provision "shell", inline: <<-SHELL
-        sudo dnf install -y ansible
-        sudo dnf install -y ansible-navigator  # removed dnf upgrade to save on deployment time.
+      node.vm.provision "shell", inline: <<-SHELL
+        set -e
+        dnf install -y ansible ansible-navigator
       SHELL
     end
   end

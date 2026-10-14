@@ -1,24 +1,36 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+#
+# Single Fedora 38 cloud-base VM on VirtualBox (2 GB RAM, 2 CPUs), bridged
+# networking.  Vagrant will ask which host interface to bridge unless you set
+# BRIDGE_IF, e.g.  BRIDGE_IF="Intel(R) Ethernet" vagrant up
+# Fedora 38 is EOL; use BOX / BOX_VERSION to try a newer release.
+
+Vagrant.require_version ">= 2.3.0"
+
+BOX         = ENV["BOX"] || "fedora/38-cloud-base"
+BOX_VERSION = ENV["BOX"] ? ENV["BOX_VERSION"] : (ENV["BOX_VERSION"] || "38.20230413.1")
+
 Vagrant.configure("2") do |config|
-    config.vm.box = "fedora/38-cloud-base"
-    config.vm.box_version = "38.20230413.1"
-  
-    config.vm.define "fedora_base_38" do |fedora|
+  config.vm.box = BOX
+  config.vm.box_version = BOX_VERSION if BOX_VERSION
+
+  config.vm.define "fedora_base_38" do |fedora|
+    fedora.vm.hostname = "fedora-base-38"
+    if ENV["BRIDGE_IF"]
+      fedora.vm.network "public_network", bridge: ENV["BRIDGE_IF"]
+    else
       fedora.vm.network "public_network"
-  
-      fedora.vm.provider "virtualbox" do |vb|
-        vb.memory = "2048" # Set desired memory size
-        vb.cpus = 2       # Set desired CPU count
-        vb.gui = false    # Disable GUI
-      end
-  
-      fedora.vm.boot_timeout = 900 # Set timeout to 10 minutes (default is 300 seconds)
-  
-      fedora.vm.provision "shell", inline: <<-SHELL
-        sudo dnf update -y   # Apply any available package updates
-      SHELL
     end
-  
-    # Add any additional configurations you may need below this line
-  
+
+    fedora.vm.provider "virtualbox" do |vb|
+      vb.memory = 2048
+      vb.cpus = 2
+      vb.gui = false
+    end
+
+    fedora.vm.boot_timeout = 900 # 15 minutes (default is 300 seconds)
+
+    fedora.vm.provision "shell", inline: "dnf update -y"
   end
-  
+end

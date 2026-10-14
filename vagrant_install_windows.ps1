@@ -1,39 +1,35 @@
-# Function to install a package on Windows
-function Install-Package {
-    param (
-        [string]$url,
-        [string]$outputPath
-    )
-    Invoke-WebRequest -Uri $url -OutFile $outputPath
-    Start-Process -FilePath $outputPath -ArgumentList "/S" -Wait
-    Remove-Item $outputPath
+#Requires -RunAsAdministrator
+<#
+.SYNOPSIS
+  Downloads and silently installs Oracle VirtualBox and HashiCorp Vagrant.
+.EXAMPLE
+  .\vagrant_install_windows.ps1
+  .\vagrant_install_windows.ps1 -VagrantVersion 2.4.1
+#>
+param(
+    [string]$VirtualBoxUrl   = "https://download.virtualbox.org/virtualbox/7.0.12/VirtualBox-7.0.12-159484-Win.exe",
+    [string]$VagrantVersion   = "2.4.0"
+)
+
+$ErrorActionPreference = "Stop"
+
+function Get-Installer {
+    param([string]$Url, [string]$OutFile)
+    Write-Host "Downloading $Url"
+    Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing
 }
 
-# Define the VirtualBox URL
-$virtualboxUrl = "https://download.virtualbox.org/virtualbox/7.0.12/VirtualBox-7.0.12-159484-Win.exe"
+# --- VirtualBox -------------------------------------------------------------
+$vbox = Join-Path $env:TEMP "VirtualBox-installer.exe"
+Get-Installer -Url $VirtualBoxUrl -OutFile $vbox
+Start-Process -FilePath $vbox -ArgumentList "--silent", "--ignore-reboot" -Wait
+Remove-Item $vbox -Force
 
-# Define the path where the installer will be saved
-$virtualboxInstallerPath = "$env:TEMP\VirtualBox-7.0.12-159484-Win.exe"
+# --- Vagrant ----------------------------------------------------------------
+$vagrantUrl = "https://releases.hashicorp.com/vagrant/$VagrantVersion/vagrant_${VagrantVersion}_windows_amd64.msi"
+$msi = Join-Path $env:TEMP "vagrant_installer.msi"
+Get-Installer -Url $vagrantUrl -OutFile $msi
+Start-Process -FilePath msiexec.exe -ArgumentList "/i", "`"$msi`"", "/qn", "/norestart" -Wait
+Remove-Item $msi -Force
 
-# Install VirtualBox
-Install-Package -url $virtualboxUrl -outputPath $virtualboxInstallerPath
-
-# Define the Vagrant URL
-$vagrantUrl = "https://releases.hashicorp.com/vagrant/2.4.0/vagrant_2.4.0_windows_amd64.msi"
-
-# Define the path where the installer will be saved
-$vagrantInstallerPath = "$env:TEMP\vagrant_installer.msi"
-
-# Function to install Vagrant on Windows
-function Install-Vagrant {
-    param (
-        [string]$url,
-        [string]$outputPath
-    )
-    Invoke-WebRequest -Uri $url -OutFile $outputPath
-    Start-Process -FilePath msiexec.exe -ArgumentList "/i $outputPath /qn" -Wait
-    Remove-Item $outputPath
-}
-
-# Install Vagrant
-Install-Vagrant -url $vagrantUrl -outputPath $vagrantInstallerPath
+Write-Host "Done. Open a NEW terminal (and reboot if Vagrant asks) then run: vagrant --version"

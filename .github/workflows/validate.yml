@@ -1,0 +1,14 @@
+name: validate
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ruby syntax of Vagrantfiles
+        run: for f in */Vagrantfile; do ruby -c "$f"; done
+      - name: Shell scripts
+        run: |
+          shellcheck *.sh 10_ubuntu24_vms/provision/*.sh
+      - name: PHP syntax
+        run: php -l lamp_ubuntu/process.php
