@@ -1,30 +1,41 @@
-# Vagrantfile
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+#
+# GitLab EE (omnibus package) on Ubuntu 24.04.
+# Host-only IP: 192.168.33.11   ->  browse to http://192.168.33.11
+# (database_servers uses .10, so both labs can run together.)
+#
+# First boot takes 10-20 minutes.  The initial root password is written to
+# /etc/gitlab/initial_root_password inside the VM (valid for 24 hours):
+#   vagrant ssh -c "sudo cat /etc/gitlab/initial_root_password"
+
+Vagrant.require_version ">= 2.3.0"
+
+GITLAB_IP = ENV["GITLAB_IP"] || "192.168.33.11"
 
 Vagrant.configure("2") do |config|
-    config.vm.box = "bento/ubuntu-20.04"
-    
-    
-    config.vm.provider "virtualbox" do |vb|
-      vb.memory = 4096 # 4 GB RAM
-    end
-  
-    config.vm.network "private_network", ip: "192.168.33.10" # You can change this IP address if needed
-  
-    config.vm.provision "shell", inline: <<-SHELL
-      # Update and install necessary dependencies
-      sudo apt-get update
-      sudo apt-get install -y curl openssh-server ca-certificates tzdata perl
-  
-      # Install Postfix
-      sudo DEBIAN_FRONTEND=noninteractive apt-get install -y postfix
-  
-      # Accept defaults during Postfix installation
-      echo "postfix postfix/main_mailer_type select Internet Site" | sudo debconf-set-selections
-      echo "postfix postfix/mailname string example.com" | sudo debconf-set-selections
-  
-      # Add GitLab package repository and install GitLab
-      curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.deb.sh | sudo bash
-      sudo apt-get install gitlab-ee
-    SHELL
+  config.vm.box = "bento/ubuntu-24.04"
+  config.vm.hostname = "gitlab.local"
+  config.vm.network "private_network", ip: GITLAB_IP
+  config.vm.boot_timeout = 600
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 6144 # GitLab needs ~4 GB minimum; 6 GB is comfortable
+    vb.cpus = 2
   end
-  
+
+  config.vm.provision "shell", env: { "EXTERNAL_URL" => "http://#{GITLAB_IP}" }, inline: <<-SHELL
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Preseed postfix BEFORE installing it so no prompt appears.
+    echo "postfix postfix/main_mailer_type select Internet Site" | debconf-set-selections
+    echo "postfix postfix/mailname string gitlab.local" | debconf-set-selections
+
+    apt-get update -y
+    apt-get install -y curl openssh-server ca-certificates tzdata perl postfix
+
+    curl -fsSL https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.deb.sh | bash
+    EXTERNAL_URL="$EXTERNAL_URL" apt-get install -y gitlab-ee
+  SHELL
+end

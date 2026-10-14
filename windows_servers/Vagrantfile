@@ -1,49 +1,37 @@
-# Creates four Windows Servers.
-# 1) One for active directory
-# 2) One that's a DNS Server
-# 3) One that's for Microsoft SQL
-# 4) One that's a IIS Web Server 
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
 #
-# As of 10/21/2023, the services are yet to be configured in this script
+# Four Windows Server VMs on VirtualBox (2 GB RAM, 1 vCPU each):
+#   activedirectory 10.0.7.2   (intended: Active Directory)
+#   dnsserver       10.0.7.3   (intended: DNS)
+#   sqlserver       10.0.7.4   (intended: Microsoft SQL)
+#   webserver       10.0.7.5   (intended: IIS)
+#
+# The server roles are NOT configured yet; these are base Windows Server boxes.
+# Windows boxes are large and slow to boot, hence the long timeouts.
+
+Vagrant.require_version ">= 2.3.0"
+
+SERVERS = {
+  "activedirectory" => "10.0.7.2",
+  "dnsserver"       => "10.0.7.3",
+  "sqlserver"       => "10.0.7.4",
+  "webserver"       => "10.0.7.5",
+}.freeze
 
 Vagrant.configure("2") do |config|
-    config.vm.define "activeDirectory" do |activeDirectory|
-    activeDirectory.vm.box = "gusztavvargadr/windows-server"
-    activeDirectory.vm.hostname = "activeDirectory"
-    activeDirectory.vm.network "private_network", ip: "10.0.7.2"
-    activeDirectory.vm.provider "virtualbox" do |vb|
-        vb.memory = "2048" # Allocate 2GB of RAM
-        vb.cpus = 1 # Set 2 vCPUs
-      end
-    end
+  config.vm.box = "gusztavvargadr/windows-server"
+  config.vm.communicator = "winrm"
+  config.vm.boot_timeout = 900
 
-    config.vm.define "dnsserver" do |dnsserver|
-        dnsserver.vm.box = "gusztavvargadr/windows-server"
-        dnsserver.vm.hostname = "dnsserver"
-        dnsserver.vm.network "private_network", ip: "10.0.7.3"
-        dnsserver.vm.provider "virtualbox" do |vb|
-          vb.memory = "2048" # Allocate 2GB of RAM
-          vb.cpus = 1 # Set 2 vCPUs
-      end
-    end
-
-    config.vm.define "sqlServer" do |sqlServer|
-        sqlServer.vm.box = "gusztavvargadr/windows-server"
-        sqlServer.vm.hostname = "sqlServer"
-        sqlServer.vm.network "private_network", ip: "10.0.7.4"
-        sqlServer.vm.provider "virtualbox" do |vb|
-          vb.memory = "2048" # Allocate 2GB of RAM
-          vb.cpus = 1 # Set 2 vCPUs
-        end
-    end
-  
-    config.vm.define "webServer" do |webServer|
-        webServer.vm.box = "gusztavvargadr/windows-server"
-        webServer.vm.hostname = "webServer"
-        webServer.vm.network "private_network", ip: "10.0.7.5"
-        webServer.vm.provider "virtualbox" do |vb|
-          vb.memory = "2048" # Allocate 2GB of RAM
-          vb.cpus = 1 # Set 2 vCPUs
+  SERVERS.each do |name, ip|
+    config.vm.define name do |node|
+      node.vm.hostname = name
+      node.vm.network "private_network", ip: ip
+      node.vm.provider "virtualbox" do |vb|
+        vb.memory = 2048
+        vb.cpus = 1
       end
     end
   end
+end
