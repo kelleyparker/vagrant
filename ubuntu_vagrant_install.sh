@@ -2,6 +2,7 @@
 # Installs Vagrant from the official HashiCorp apt repository (Debian/Ubuntu).
 set -euo pipefail
 
+# shellcheck source=/dev/null
 codename="$(. /etc/os-release && echo "${UBUNTU_CODENAME:-${VERSION_CODENAME:-}}")"
 [[ -n "$codename" ]] || codename="$(lsb_release -cs)"
 
